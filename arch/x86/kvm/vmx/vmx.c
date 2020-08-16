@@ -2425,7 +2425,7 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf,
 	      CPU_BASED_MONITOR_EXITING |
 	      CPU_BASED_INVLPG_EXITING |
 	      CPU_BASED_RDPMC_EXITING |
-		  CPU_BASED_RDTSC_EXITING:
+		  CPU_BASED_RDTSC_EXITING;
 
 	opt = CPU_BASED_TPR_SHADOW |
 	      CPU_BASED_USE_MSR_BITMAPS |
@@ -5662,6 +5662,8 @@ static int handle_encls(struct kvm_vcpu *vcpu)
 	return 1;
 }
 
+static u32 print_once = 1;
+
 static int handle_rdtsc(struct kvm_vcpu *vcpu) 
 { 
 	static u64 rdtsc_fake = 0;
@@ -5675,29 +5677,24 @@ static int handle_rdtsc(struct kvm_vcpu *vcpu)
 		rdtsc_fake = rdtsc_real;
 	}
 
-	//printk("[handle_rdtsc] real tsc: %llu\n", rdtsc_real);
 	if(rdtsc_prev != 0)
 	{
 		if(rdtsc_real > rdtsc_prev)
 		{
 			u64 diff = rdtsc_real - rdtsc_prev;
 			u64 fake_diff =  diff / 16; // if you have 4.2Ghz on your vm, change 16 to 20 
-			//printk("[handle_rdtsc] checking difference: %llu\n", diff);
-			//printk("[handle_rdtsc] fake difference: %llu\n", fake_diff);
 			rdtsc_fake += fake_diff;
-			//printk("[handle_rdtsc] rdtsc_fake after fake difference: %llu\n", rdtsc_fake);
 		}
 	}
 	if(rdtsc_fake > rdtsc_real)
 	{
 		rdtsc_fake = rdtsc_real;
 	}
-	//printk("[handle_rdtsc] fake tsc: %llu\n", rdtsc_fake);
 	rdtsc_prev = rdtsc_real;
     	vcpu->arch.regs[VCPU_REGS_RAX] = rdtsc_fake & -1u;
     	vcpu->arch.regs[VCPU_REGS_RDX] = (rdtsc_fake >> 32) & -1u;
     
-   	 return skip_emulated_instruction(vcpu);
+        return skip_emulated_instruction(vcpu);
 }
 
 /*
